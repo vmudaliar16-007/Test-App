@@ -3,34 +3,37 @@ import { GoogleGenAI } from "@google/genai";
 import { stripBase64Prefix, getMimeTypeFromBase64 } from "./imageUtils";
 import { DesignMode, InteriorStyle, VanType } from "../types";
 
-// Robustly retrieve API Key for different build environments (Vite, Webpack, etc.)
+// Robustly retrieve API Key for different build environments (Vite, Webpack, CRA)
 const getApiKey = (): string => {
   let key = '';
 
-  // 1. Try standard process.env (Webpack/Node/Parcel)
-  // We check 'typeof process' to avoid ReferenceError in pure browser builds
+  // 1. Try Vite standard (import.meta.env) - Most likely for this stack
   try {
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      key = process.env.API_KEY;
+    // @ts-ignore
+    if (import.meta && import.meta.env) {
+        // @ts-ignore
+        if (import.meta.env.VITE_API_KEY) key = import.meta.env.VITE_API_KEY;
+        // @ts-ignore
+        else if (import.meta.env.API_KEY) key = import.meta.env.API_KEY;
     }
-  } catch (e) {
-    // Ignore error if process is not defined
-  }
+  } catch (e) {}
 
-  // 2. Try Vite standard (import.meta.env)
-  // If the previous check failed, try this. 
+  // 2. Try Standard process.env (Webpack/Node)
   if (!key) {
     try {
-      // Cast to any to avoid TypeScript errors if types aren't configured
-      const meta = import.meta as any;
-      if (meta.env && meta.env.VITE_API_KEY) {
-        key = meta.env.VITE_API_KEY;
-      } else if (meta.env && meta.env.API_KEY) {
-        key = meta.env.API_KEY;
+      if (typeof process !== 'undefined' && process.env) {
+        if (process.env.API_KEY) key = process.env.API_KEY;
+        // Support Create React App style
+        else if (process.env.REACT_APP_API_KEY) key = process.env.REACT_APP_API_KEY;
       }
-    } catch (e) {
-      // Ignore error
-    }
+    } catch (e) {}
+  }
+
+  // Debug log (masked)
+  if (key) {
+    console.log("Gemini Service: API Key found (" + key.substring(0, 4) + "...)");
+  } else {
+    console.warn("Gemini Service: No API Key found in environment variables.");
   }
 
   return key;
@@ -90,9 +93,10 @@ export const generateRedesign = async (
   
   const apiKey = getApiKey();
   
-  if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE") {
-    console.error("API Key is missing. Please set API_KEY or VITE_API_KEY in your environment variables.");
-    throw new Error("Configuration Error: API Key missing.");
+  // Strict check
+  if (!apiKey || apiKey.includes("YOUR_")) {
+    console.error("API Key is missing or invalid. Please check Netlify Environment Variables.");
+    throw new Error("API Key missing. Please set VITE_API_KEY in Netlify settings.");
   }
 
   // Initialize AI
@@ -147,8 +151,10 @@ export const generateRedesign = async (
     // Flatten array
     return results.flat();
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
+    // Pass the actual error message up
+    if (error.message) throw new Error(error.message);
     throw error;
   }
 };

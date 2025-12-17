@@ -150,9 +150,11 @@ const App: React.FC = () => {
 
       setCurrentDesign(prev => ({ ...prev, generatedImages: images }));
       setView(AppView.RESULTS);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Failed to generate design. Connection error or invalid configuration.");
+      // Show actual error message if available (e.g. "API Key missing")
+      const msg = error.message || "Failed to generate design. Please check your connection.";
+      alert(msg);
       setView(AppView.CONFIGURE);
     }
   };
