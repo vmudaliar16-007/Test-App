@@ -2,7 +2,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { stripBase64Prefix, getMimeTypeFromBase64 } from "./imageUtils";
 import { DesignMode, InteriorStyle, VanType } from "../types";
-import { CONFIG } from "../config";
 
 const getSystemInstruction = () => {
   return `You are a world-class interior designer specializing in camper vans and RV conversions. 
@@ -56,13 +55,9 @@ export const generateRedesign = async (
   style: InteriorStyle
 ): Promise<string[]> => {
   
-  const apiKey = CONFIG.GEMINI_API_KEY;
-
-  if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE") {
-    throw new Error("API Key is missing or not configured in config.ts");
-  }
-  
-  const ai = new GoogleGenAI({ apiKey: apiKey });
+  // Initialize AI with Environment Variable
+  // Ensure 'API_KEY' is set in your deployment environment (e.g., Netlify, Vercel)
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const mimeType = getMimeTypeFromBase64(base64Image);
   const cleanBase64 = stripBase64Prefix(base64Image);
