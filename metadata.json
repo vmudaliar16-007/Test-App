@@ -1,0 +1,7 @@
+{
+  "name": "AI Van Lifestyle",
+  "description": "Professional AI-powered van interior redesign application. Upload your interior photos and visualize your dream van build.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

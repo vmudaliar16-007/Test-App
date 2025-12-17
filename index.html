@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="/manifest.json">
+    <title>AI Van Lifestyle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Add Exo 2 Font for Automotive/Tech feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#f0f9ff',  // Light Blue tint
+                100: '#e0f2fe',
+                200: '#bae6fd',
+                300: '#7dd3fc',
+                400: '#38bdf8',
+                500: '#0040FF', // VIBRANT ELECTRIC BLUE
+                600: '#0030CC',
+                700: '#0369a1',
+                800: '#075985',
+                900: '#0f172a', // Dark Metal
+                950: '#020617',
+              },
+              metal: {
+                100: '#f8fafc',
+                200: '#e2e8f0', // Light steel
+                300: '#cbd5e1',
+                400: '#94a3b8', // Brushed metal
+                500: '#64748b',
+                800: '#334155', // Dark Steel
+                900: '#1e293b',
+              },
+              rust: {
+                400: '#ca8a04',
+                500: '#b45309', // Rust Orange
+                600: '#92400e',
+              }
+            },
+            fontFamily: {
+              sans: ['Exo 2', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+              body: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            },
+            backgroundImage: {
+              'metal-gradient': 'linear-gradient(145deg, #f1f5f9 0%, #cbd5e1 100%)',
+              'metal-dark': 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)',
+              'blue-sheen': 'linear-gradient(135deg, #0040FF 0%, #002080 100%)',
+            },
+            boxShadow: {
+              'glow': '0 0 20px rgba(0, 64, 255, 0.6)',
+              'metal': 'inset 1px 1px 0px rgba(255,255,255,0.5), 2px 2px 5px rgba(0,0,0,0.1)',
+              'metal-pressed': 'inset 2px 2px 5px rgba(0,0,0,0.2), inset -1px -1px 0px rgba(255,255,255,0.2)',
+              'bolt': '1px 1px 2px rgba(0,0,0,0.3), inset 1px 1px 1px rgba(255,255,255,0.5)',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        -webkit-tap-highlight-color: transparent;
+        background-color: #f1f5f9;
+        /* Subtle brushed metal texture */
+        background-image: 
+          repeating-linear-gradient(90deg, transparent 0, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px);
+        user-select: none;
+        -webkit-user-select: none;
+        overscroll-behavior-y: none;
+        -webkit-touch-callout: none;
+        font-family: 'Inter', sans-serif;
+        /* Prevent elastic scrolling on Mac/iOS */
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      
+      h1, h2, h3, h4, h5, h6, button, .font-heading {
+        font-family: 'Exo 2', sans-serif;
+      }
+      
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* RIVET/SCREW UTILITY CLASS */
+      .rivet {
+        width: 8px;
+        height: 8px;
+        background: radial-gradient(circle at 30% 30%, #e2e8f0, #94a3b8);
+        border-radius: 50%;
+        border: 1px solid #64748b;
+        box-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+        position: absolute;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .rivet::after {
+        content: '';
+        width: 4px;
+        height: 1px;
+        background-color: #475569;
+        transform: rotate(45deg);
+        box-shadow: 0 0 1px rgba(255,255,255,0.5);
+      }
+      .rivet::before {
+        content: '';
+        width: 4px;
+        height: 1px;
+        background-color: #475569;
+        transform: rotate(-45deg);
+        position: absolute;
+      }
+      
+      .rivet-tl { top: 6px; left: 6px; }
+      .rivet-tr { top: 6px; right: 6px; }
+      .rivet-bl { bottom: 6px; left: 6px; }
+      .rivet-br { bottom: 6px; right: 6px; }
+
+      .rivet-rust {
+        border-color: #92400e;
+        background: radial-gradient(circle at 30% 30%, #fdba74, #b45309);
+      }
+      
+      input, textarea {
+        user-select: text;
+        -webkit-user-select: text;
+      }
+      
+      /* Only allow scrolling on specific elements */
+      #root {
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@capacitor/core": "https://esm.sh/@capacitor/core@^6.0.0",
+    "@capacitor/status-bar": "https://esm.sh/@capacitor/status-bar@^6.0.0",
+    "@capacitor/splash-screen": "https://esm.sh/@capacitor/splash-screen@^6.0.0",
+    "@capacitor/cli": "https://esm.sh/@capacitor/cli@^8.0.0",
+    "@revenuecat/purchases-capacitor": "https://esm.sh/@revenuecat/purchases-capacitor@^11.3.0",
+    "@capacitor/browser": "https://esm.sh/@capacitor/browser@^8.0.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+  </body>
+</html>
