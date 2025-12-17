@@ -3,6 +3,39 @@ import { GoogleGenAI } from "@google/genai";
 import { stripBase64Prefix, getMimeTypeFromBase64 } from "./imageUtils";
 import { DesignMode, InteriorStyle, VanType } from "../types";
 
+// Robustly retrieve API Key for different build environments (Vite, Webpack, etc.)
+const getApiKey = (): string => {
+  let key = '';
+
+  // 1. Try standard process.env (Webpack/Node/Parcel)
+  // We check 'typeof process' to avoid ReferenceError in pure browser builds
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      key = process.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore error if process is not defined
+  }
+
+  // 2. Try Vite standard (import.meta.env)
+  // If the previous check failed, try this. 
+  if (!key) {
+    try {
+      // Cast to any to avoid TypeScript errors if types aren't configured
+      const meta = import.meta as any;
+      if (meta.env && meta.env.VITE_API_KEY) {
+        key = meta.env.VITE_API_KEY;
+      } else if (meta.env && meta.env.API_KEY) {
+        key = meta.env.API_KEY;
+      }
+    } catch (e) {
+      // Ignore error
+    }
+  }
+
+  return key;
+};
+
 const getSystemInstruction = () => {
   return `You are a world-class interior designer specializing in camper vans and RV conversions. 
   Your goal is to generate photorealistic visualization concepts based on user interior photos.
@@ -55,9 +88,15 @@ export const generateRedesign = async (
   style: InteriorStyle
 ): Promise<string[]> => {
   
-  // Initialize AI with Environment Variable
-  // Ensure 'API_KEY' is set in your deployment environment (e.g., Netlify, Vercel)
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getApiKey();
+  
+  if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE") {
+    console.error("API Key is missing. Please set API_KEY or VITE_API_KEY in your environment variables.");
+    throw new Error("Configuration Error: API Key missing.");
+  }
+
+  // Initialize AI
+  const ai = new GoogleGenAI({ apiKey });
   
   const mimeType = getMimeTypeFromBase64(base64Image);
   const cleanBase64 = stripBase64Prefix(base64Image);
