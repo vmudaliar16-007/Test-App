@@ -107,52 +107,58 @@ export const generateRedesign = async (
   const prompt = constructPrompt(mode, type, style);
 
   try {
-    // We request 2 variations by making parallel calls since candidateCount isn't always supported for image models
+    // Using 'gemini-2.5-flash-image' for general image tasks
     const modelId = 'gemini-2.5-flash-image';
     
-    // Create a promise for a single generation
-    const generateSingle = async () => {
-      const response = await ai.models.generateContent({
-        model: modelId,
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                mimeType: mimeType,
-                data: cleanBase64
-              }
-            },
-            {
-              text: prompt
+    // REDUCED LOAD: We only generate 1 image at a time to stay within Free Tier limits.
+    // Parallel requests (Promise.all) often trigger 429 Resource Exhausted errors.
+    const response = await ai.models.generateContent({
+      model: modelId,
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: cleanBase64
             }
-          ]
-        },
-        config: {
-          systemInstruction: getSystemInstruction(),
-          temperature: 0.7 
-        }
-      });
-
-      // Extract image parts
-      const images: string[] = [];
-      if (response.candidates?.[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-             if (part.inlineData && part.inlineData.data) {
-                images.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
-             }
-        }
+          },
+          {
+            text: prompt
+          }
+        ]
+      },
+      config: {
+        systemInstruction: getSystemInstruction(),
+        temperature: 0.7 
       }
-      return images;
-    };
+    });
 
-    // Run 2 generations in parallel
-    const results = await Promise.all([generateSingle(), generateSingle()]);
+    // Extract image parts
+    const images: string[] = [];
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+           if (part.inlineData && part.inlineData.data) {
+              images.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
+           }
+      }
+    }
     
-    // Flatten array
-    return results.flat();
+    if (images.length === 0) {
+      // Sometimes the model returns text saying it can't do it, or safety filters trigger.
+      console.warn("No images returned. Response text:", response.text);
+      throw new Error("The AI could not generate an image for this input. Please try a different photo.");
+    }
+
+    return images;
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
+    
+    // Handle Quota/Rate Limit Errors specific to 429
+    if (error.status === 429 || (error.message && error.message.includes("429")) || (error.message && error.message.includes("quota"))) {
+       throw new Error("Server is busy (High Traffic). Please wait 1 minute and try again.");
+    }
+    
     // Pass the actual error message up
     if (error.message) throw new Error(error.message);
     throw error;
