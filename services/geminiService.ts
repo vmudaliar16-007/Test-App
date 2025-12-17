@@ -84,6 +84,9 @@ const constructPrompt = (mode: DesignMode, type: VanType, style: InteriorStyle) 
   - Make it look inviting, spacious, and professional.`;
 };
 
+// Helper: Wait function
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const generateRedesign = async (
   base64Image: string,
   mode: DesignMode,
@@ -106,61 +109,86 @@ export const generateRedesign = async (
   const cleanBase64 = stripBase64Prefix(base64Image);
   const prompt = constructPrompt(mode, type, style);
 
-  try {
-    // Using 'gemini-2.5-flash-image' for general image tasks
-    const modelId = 'gemini-2.5-flash-image';
-    
-    // REDUCED LOAD: We only generate 1 image at a time to stay within Free Tier limits.
-    // Parallel requests (Promise.all) often trigger 429 Resource Exhausted errors.
-    const response = await ai.models.generateContent({
-      model: modelId,
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              mimeType: mimeType,
-              data: cleanBase64
-            }
-          },
-          {
-            text: prompt
+  // Using 'gemini-2.5-flash-image' for general image tasks
+  const modelId = 'gemini-2.5-flash-image';
+  
+  const generateOptions = {
+    model: modelId,
+    contents: {
+      parts: [
+        {
+          inlineData: {
+            mimeType: mimeType,
+            data: cleanBase64
           }
-        ]
-      },
-      config: {
-        systemInstruction: getSystemInstruction(),
-        temperature: 0.7 
+        },
+        {
+          text: prompt
+        }
+      ]
+    },
+    config: {
+      systemInstruction: getSystemInstruction(),
+      temperature: 0.7 
+    }
+  };
+
+  // RETRY LOGIC: Try up to 3 times with exponential backoff
+  let attempts = 0;
+  const maxAttempts = 3;
+  let lastError: any = null;
+
+  while (attempts < maxAttempts) {
+    try {
+      console.log(`Attempting generation (${attempts + 1}/${maxAttempts})...`);
+      
+      const response = await ai.models.generateContent(generateOptions);
+
+      // Extract image parts
+      const images: string[] = [];
+      if (response.candidates?.[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+             if (part.inlineData && part.inlineData.data) {
+                images.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
+             }
+        }
       }
-    });
+      
+      if (images.length === 0) {
+        // If successful API call but no image (content safety filters?), don't retry, just fail.
+        console.warn("No images returned. Response text:", response.text);
+        throw new Error("The AI could not generate an image for this input. Please try a different photo.");
+      }
 
-    // Extract image parts
-    const images: string[] = [];
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-           if (part.inlineData && part.inlineData.data) {
-              images.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
-           }
+      return images;
+
+    } catch (error: any) {
+      lastError = error;
+      console.error(`Gemini API Error (Attempt ${attempts + 1}):`, error);
+
+      // Check for Rate Limits (429) or Server Errors (503)
+      if (error.status === 429 || error.status === 503 || (error.message && (error.message.includes("429") || error.message.includes("quota") || error.message.includes("overloaded")))) {
+        attempts++;
+        if (attempts < maxAttempts) {
+          const delay = 2000 * Math.pow(2, attempts - 1); // 2s, 4s, 8s
+          console.log(`Waiting ${delay}ms before retry...`);
+          await wait(delay);
+          continue; // Retry loop
+        }
+      } else {
+        // If it's a 400 (Bad Request) or 401 (Auth), don't retry.
+        throw error;
       }
     }
-    
-    if (images.length === 0) {
-      // Sometimes the model returns text saying it can't do it, or safety filters trigger.
-      console.warn("No images returned. Response text:", response.text);
-      throw new Error("The AI could not generate an image for this input. Please try a different photo.");
-    }
-
-    return images;
-
-  } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    
-    // Handle Quota/Rate Limit Errors specific to 429
-    if (error.status === 429 || (error.message && error.message.includes("429")) || (error.message && error.message.includes("quota"))) {
-       throw new Error("Server is busy (High Traffic). Please wait 1 minute and try again.");
-    }
-    
-    // Pass the actual error message up
-    if (error.message) throw new Error(error.message);
-    throw error;
   }
+
+  // If we fell through the loop, we failed.
+  if (lastError) {
+     if (lastError.status === 429 || (lastError.message && lastError.message.includes("quota"))) {
+       throw new Error("High traffic. The free tier daily limit may be reached. Please try again later.");
+     }
+     if (lastError.message) throw new Error(lastError.message);
+  }
+  
+  throw new Error("Failed to generate image after multiple attempts.");
 };

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Header } from '../components/Header';
 import { Button } from '../components/Button';
@@ -15,14 +16,22 @@ export const Configuration: React.FC<ConfigurationProps> = ({ onBack, onGenerate
   const [mode, setMode] = useState<DesignMode | null>(null);
   const [vanType, setVanType] = useState<VanType | null>(null);
   const [style, setStyle] = useState<InteriorStyle | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleNext = () => {
     if (step === 1 && mode) setStep(2);
     else if (step === 2 && vanType) setStep(3);
-    else if (step === 3 && style && mode && vanType) onGenerate(mode, vanType, style);
+    else if (step === 3 && style && mode && vanType) {
+        if (isSubmitting) return; // Prevent double click
+        setIsSubmitting(true);
+        onGenerate(mode, vanType, style);
+        // Note: We don't reset isSubmitting here because the parent will unmount this component 
+        // or change the view to PROCESSING. If we reset it too early, user might click again.
+    }
   };
 
   const canProceed = () => {
+    if (isSubmitting) return false;
     if (step === 1) return !!mode;
     if (step === 2) return !!vanType;
     if (step === 3) return !!style;
@@ -123,7 +132,7 @@ export const Configuration: React.FC<ConfigurationProps> = ({ onBack, onGenerate
           onClick={handleNext} 
           disabled={!canProceed()}
         >
-          {step === 3 ? "Generate Designs" : "Next Step"}
+          {isSubmitting ? "Sending..." : (step === 3 ? "Generate Designs" : "Next Step")}
         </Button>
       </div>
     </div>
