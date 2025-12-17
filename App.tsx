@@ -20,12 +20,6 @@ import {
   clearDesignsFromDB 
 } from './services/storageService';
 
-// Capacitor Imports
-import { StatusBar, Style } from '@capacitor/status-bar';
-import { SplashScreen } from '@capacitor/splash-screen';
-import { Capacitor } from '@capacitor/core';
-import { Purchases } from '@revenuecat/purchases-capacitor';
-
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.SPLASH);
   
@@ -48,33 +42,13 @@ const App: React.FC = () => {
     freeLimit: FREE_GENERATION_LIMIT
   });
 
-  // Load Data and Initialize Native Features
+  // Load Data
   useEffect(() => {
-    // 1. Initialize Native Features & RevenueCat
+    // 1. Initialize Mock Store
     const initApp = async () => {
-      if (Capacitor.isNativePlatform()) {
-        try {
-          await StatusBar.setStyle({ style: Style.Dark });
-          await StatusBar.setOverlaysWebView({ overlay: true });
-          await SplashScreen.hide();
-          
-          // Initialize RevenueCat
-          await RevenueCatService.initialize();
-          
-          // Check initial status
-          const isPro = await RevenueCatService.checkSubscriptionStatus();
-          setSubscription(prev => ({ ...prev, isPro }));
-
-          // Listen for updates (e.g. renewal, expiration outside app)
-          Purchases.addCustomerInfoUpdateListener((info) => {
-             const active = typeof info.entitlements.active['pro_access'] !== "undefined";
-             setSubscription(prev => ({ ...prev, isPro: active }));
-          });
-
-        } catch (e) {
-          console.log("Native init error", e);
-        }
-      }
+       await RevenueCatService.initialize();
+       const isPro = await RevenueCatService.checkSubscriptionStatus();
+       setSubscription(prev => ({ ...prev, isPro }));
     };
     initApp();
 
@@ -160,7 +134,6 @@ const App: React.FC = () => {
     setView(AppView.PROCESSING);
 
     try {
-      // API Key is now handled internally in geminiService via Config
       const images = await generateRedesign(
         currentDesign.originalImage,
         mode,

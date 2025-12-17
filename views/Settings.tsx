@@ -42,7 +42,7 @@ export const Settings: React.FC<SettingsProps> = ({
             alert("Purchases restored successfully! You now have Pro access.");
             onProStatusRestored();
         } else {
-            alert("No active subscriptions found to restore.");
+            alert("No active subscriptions found. (This is a mock app, go buy the fake sub first!)");
         }
     } catch (e) {
         alert("Failed to connect to store.");

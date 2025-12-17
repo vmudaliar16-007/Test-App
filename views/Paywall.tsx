@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Crown, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '../components/Button';
-import { RevenueCatService } from '../services/revenueCatService';
-import { PurchasesPackage } from '@revenuecat/purchases-capacitor';
+import { RevenueCatService, MockPackage } from '../services/revenueCatService';
 import { Browser } from '@capacitor/browser';
 import { CONFIG } from '../config';
 
@@ -13,13 +12,13 @@ interface PaywallProps {
 }
 
 export const Paywall: React.FC<PaywallProps> = ({ onClose, onSubscribeSuccess }) => {
-  const [packages, setPackages] = useState<PurchasesPackage[]>([]);
-  const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
+  const [packages, setPackages] = useState<MockPackage[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<MockPackage | null>(null);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch real products from Store
+  // Fetch Fake products
   useEffect(() => {
     const loadOfferings = async () => {
       try {
@@ -29,9 +28,6 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose, onSubscribeSuccess })
           // Default to annual if available, otherwise first one
           const annual = offerings.current.availablePackages.find(p => p.packageType === 'ANNUAL');
           setSelectedPackage(annual || offerings.current.availablePackages[0]);
-        } else {
-          // Fallback for Web/Dev (Simulated)
-          console.warn("No offerings found (Web mode or invalid keys)");
         }
       } catch (e) {
         console.error("Failed to load offerings", e);
@@ -53,9 +49,7 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose, onSubscribeSuccess })
         onSubscribeSuccess();
       }
     } catch (e: any) {
-      if (!e.userCancelled) {
-        setError("Transaction failed. Please try again.");
-      }
+      setError("Transaction failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -69,7 +63,7 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose, onSubscribeSuccess })
             alert("Purchases restored successfully!");
             onSubscribeSuccess();
         } else {
-            alert("No active subscriptions found to restore.");
+            alert("No active subscriptions found to restore. (Mock: Buy first)");
         }
     } catch (e) {
         alert("Failed to restore purchases.");
@@ -177,7 +171,7 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose, onSubscribeSuccess })
                  <AlertTriangle className="shrink-0" />
                  <div>
                     <span className="font-bold block">Store Unavailable</span>
-                    Could not connect to App Store. If you are in development mode, ensure RevenueCat keys are configured.
+                    Could not connect to App Store.
                  </div>
             </div>
         )}
@@ -192,7 +186,7 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose, onSubscribeSuccess })
             disabled={loading || !selectedPackage}
             className="mb-4 text-base shadow-xl shadow-brand-500/20"
             >
-            {loading ? 'Processing...' : `Subscribe`}
+            {loading ? 'Processing...' : `Subscribe (Mock)`}
             </Button>
 
             <div className="flex justify-center gap-6 text-[10px] font-medium text-gray-400 uppercase tracking-wide">

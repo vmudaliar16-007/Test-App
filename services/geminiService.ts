@@ -58,8 +58,8 @@ export const generateRedesign = async (
   
   const apiKey = CONFIG.GEMINI_API_KEY;
 
-  if (!apiKey) {
-    throw new Error("API Key is missing. Ensure process.env.API_KEY is set.");
+  if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE") {
+    throw new Error("API Key is missing or not configured in config.ts");
   }
   
   const ai = new GoogleGenAI({ apiKey: apiKey });
