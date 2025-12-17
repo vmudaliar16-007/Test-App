@@ -5,9 +5,8 @@
 
 export const CONFIG = {
   // GOOGLE GEMINI AI
-  // 1. Get key from https://aistudio.google.com/
-  // 2. IMPORTANT: Restrict this key in Google Cloud Console to your Android/iOS Bundle IDs
-  GEMINI_API_KEY: "YOUR_GEMINI_API_KEY_HERE",
+  // The API key is automatically injected from the environment variable API_KEY
+  GEMINI_API_KEY: process.env.API_KEY,
 
   // REVENUECAT (IN-APP PURCHASES)
   // Get these keys from https://app.revenuecat.com/
